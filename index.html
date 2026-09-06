@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Kalkulator zużycia VRAM dla lokalnych modeli AI (LLM) — poprawna formuła KV cache z uwzględnieniem GQA, kwantyzacja wag, narzuty systemowe.">
+<meta name="description" content="VRTX Checker — kalkulator zużycia VRAM dla lokalnych modeli AI (LLM). Poprawna formuła KV cache z uwzględnieniem GQA, okien przesuwnych i MoE, kwantyzacja wag, narzuty systemowe.">
 <meta name="color-scheme" content="light dark">
-<title>Kalkulator VRAM dla modeli AI</title>
+<title>VRTX Checker</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2376b900'/><rect x='7' y='11' width='18' height='10' rx='2' fill='%230f172a'/></svg>">
 <style>
 :root{
@@ -244,7 +244,7 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
           </g>
           <circle class="gpu-hub" cx="33.4" cy="13.5" r="1.55"/>
         </svg>
-        <h1 id="t-cfg">Kalkulator VRAM dla modeli AI</h1>
+        <h1 id="t-cfg">VRTX Checker</h1>
       </div>
       <span class="chip" id="chip-gpu">32 GiB</span>
     </div>
@@ -1027,7 +1027,7 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
 
   $("copy").addEventListener("click", function () {
     var r = compute();
-    var out = ["Kalkulator VRAM — " + r.g.name,
+    var out = ["VRTX Checker — " + r.g.name,
                "Limit: " + fmtLimit(r.g.vram) + " GiB · KV cache domyślnie: " + kvLabel(S.kvBits), ""];
     r.rows.forEach(function (row) {
       out.push("• " + row.m.name + "  (" + row.m.params + " mld, wagi " + row.m.quant +

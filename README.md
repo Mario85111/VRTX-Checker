@@ -1,4 +1,4 @@
-# Kalkulator VRAM dla modeli AI
+# VRTX Checker
 
 Liczy, ile pamięci karty graficznej zajmie **kilka modeli AI załadowanych jednocześnie** — wagi, KV cache i narzuty systemowe. Powstał po to, żeby przed pobraniem 40 GB plików wiedzieć, czy zestaw w ogóle się zmieści.
 

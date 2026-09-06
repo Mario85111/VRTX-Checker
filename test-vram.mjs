@@ -1,5 +1,5 @@
 /**
- * Smoke test rdzenia obliczeniowego kalkulatora VRAM.
+ * Smoke test rdzenia obliczeniowego VRTX Checkera.
  *
  *   node test-vram.mjs
  *
@@ -230,7 +230,7 @@ const { V, document: doc } = runApp();
 const P = (id) => V.PRESETS.find((p) => p.id === id);
 const model = (presetId, over = {}) => Object.assign(V.mk(1, "t", presetId, "Q4_K_M", 8192), over);
 
-console.log("\x1b[1m\x1b[36mSmoke test kalkulatora VRAM\x1b[0m  (kod z index.html, atrapa DOM)");
+console.log("\x1b[1m\x1b[36mVRTX Checker — smoke test\x1b[0m  (kod z index.html, atrapa DOM)");
 
 /* ---- 1. KV cache: dokładne wartości wyliczone ręcznie ---- */
 group("1. KV cache — kotwice o dokładnych wartościach");

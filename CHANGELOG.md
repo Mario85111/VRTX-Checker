@@ -14,6 +14,7 @@ Format wg [Keep a Changelog](https://keepachangelog.com/pl/1.1.0/).
 
 ### Zmienione
 
+- **Nazwa: „Kalkulator VRAM dla modeli AI" → „VRTX Checker".** Zmiana obejmuje tytuł strony, nagłówek, meta description, nagłówek eksportu do schowka, banner testów i `README.md`. Klucz `localStorage` celowo pozostaje `vram-calc-v2` — jego zmiana skasowałaby zapisany stan wszystkim, którzy już korzystali z aplikacji.
 - Panel globalny: etykieta „Precyzja KV cache" → „Precyzja KV cache — domyślna", z wyjaśnieniem, że modele mogą ją nadpisać. Lista opcji generowana z tabeli `KV_PREC` zamiast wpisanej w HTML, więc globalny select i te na kartach modeli nie mogą się rozjechać.
 - Podsumowanie modelu podaje precyzję użytą do wyliczenia (`KV cache 0,75 GiB @ FP16`), a przy nadpisaniu dopisek `(własna)`.
 - Eksport do schowka rozdziela kwantyzację wag od precyzji KV i oznacza nadpisania gwiazdką z legendą.
