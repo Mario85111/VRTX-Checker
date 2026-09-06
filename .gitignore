@@ -1,0 +1,24 @@
+# Windows / OneDrive
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+
+# Edytory
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node — projekt nie ma zależności, ale narzędzia bywają uruchamiane doraźnie
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Robocze
+*.bak
+*.tmp
+scratch/
