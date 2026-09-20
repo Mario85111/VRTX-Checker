@@ -86,6 +86,20 @@ p{margin:0}
 }
 @media (prefers-color-scheme: dark){ .chip{border-color:#243350} }
 
+/* przelacznik jezyka — dwa przyciski jako jedna pigulka */
+.lang{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;overflow:hidden;background:var(--card)}
+@media (prefers-color-scheme: dark){ .lang{border-color:#243350} }
+.lang button{
+  appearance:none;border:0;background:transparent;cursor:pointer;
+  font:800 11px/1 inherit;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);padding:6px 11px;transition:background .15s,color .15s;
+}
+@media (prefers-reduced-motion: reduce){ .lang button{transition:none} }
+.lang button:hover{color:var(--ink)}
+.lang button[aria-pressed="true"]{background:var(--nv);color:#0f172a}
+.lang button:focus-visible{outline:2px solid var(--nv);outline-offset:-2px}
+.head-right{display:flex;align-items:center;gap:9px}
+
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
 .col-a .card{background:var(--card-2)}
 /* Suma zostaje w polu widzenia, gdy lista modeli jest dłuższa niż ekran.
@@ -246,59 +260,65 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
         </svg>
         <h1 id="t-cfg">VRTX Checker</h1>
       </div>
-      <span class="chip" id="chip-gpu">32 GiB</span>
+      <div class="head-right">
+        <div class="lang" id="lang" role="group" aria-label="Language / Język">
+          <button type="button" data-lang="pl" aria-pressed="true" lang="pl">PL</button>
+          <button type="button" data-lang="en" aria-pressed="false" lang="en">EN</button>
+        </div>
+        <span class="chip" id="chip-gpu">32 GiB</span>
+      </div>
     </div>
-    <p class="lede">Szacuje zapotrzebowanie na pamięć przy jednoczesnym załadowaniu kilku modeli. KV cache liczony z rzeczywistej architektury (warstwy × głowice KV × wymiar głowicy), a nie z samej liczby parametrów.</p>
+    <p class="lede" data-i18n="lede"></p>
 
     <div class="panel">
-      <h3>Ustawienia globalne</h3>
-      <p>Precyzja KV cache: FP8 zmniejsza bufor kontekstu o połowę względem FP16. To ustawienie <strong>domyślne</strong> — każdy model może je nadpisać w swojej karcie, bo precyzję cache’u zadaje się osobno dla każdego procesu serwera.</p>
+      <h3 data-i18n="g.title"></h3>
+      <p data-i18n-html="h.g.intro"></p>
       <div class="grid">
-        <label class="f"><span class="lbl">Precyzja KV cache — domyślna</span>
+        <label class="f"><span class="lbl" data-i18n="g.kvPrec"></span>
           <select id="kv-prec"></select></label>
-        <label class="f"><span class="lbl">Narzut systemu (GiB)</span>
+        <label class="f"><span class="lbl" data-i18n="g.os"></span>
           <select id="os-preset">
-            <option value="0">Bez systemu — 0</option>
-            <option value="0.2">Linux headless — 0,2</option>
-            <option value="0.6">Linux pulpit — 0,6</option>
-            <option value="1.5">Windows — 1,5</option>
+            <option value="0" data-i18n="g.os.0"></option>
+            <option value="0.2" data-i18n="g.os.02"></option>
+            <option value="0.6" data-i18n="g.os.06"></option>
+            <option value="1.5" data-i18n="g.os.15"></option>
           </select></label>
-        <label class="f"><span class="lbl">Narzut na proces (GiB)</span>
+        <label class="f"><span class="lbl" data-i18n="g.proc"></span>
           <input type="number" id="proc-ov" min="0" max="4" step="0.1" value="0.6"
-                 title="Kontekst CUDA + bufory obliczeniowe. Liczone osobno dla każdego modelu."></label>
-        <label class="f"><span class="lbl">Margines fragmentacji</span>
+                 data-i18n-title="g.proc.title"></label>
+        <label class="f"><span class="lbl" data-i18n="g.frag"></span>
           <select id="frag">
-            <option value="0">0% — brak</option>
-            <option value="0.05">5% — zalecane</option>
-            <option value="0.1">10% — ostrożnie</option>
+            <option value="0" data-i18n="g.frag.0"></option>
+            <option value="0.05" data-i18n="g.frag.5"></option>
+            <option value="0.1" data-i18n="g.frag.10"></option>
           </select></label>
       </div>
 
       <p class="alert" id="kv-warn" role="status" hidden></p>
 
       <details>
-        <summary>Co oznaczają te ustawienia?</summary>
-        <p class="hint"><strong>Precyzja KV cache</strong> — ile bajtów zajmuje jedna liczba w pamięci kontekstu. FP8 to te same dane zapisane drobniej: połowa miejsca przy minimalnej stracie jakości. Ustawienie z tego panelu jest domyślne dla wszystkich modeli, ale każdy może mieć własne — w praktyce każdy model chodzi jako osobny serwer, a precyzję cache’u zadaje się per proces (<code>--cache-type-k</code> w llama.cpp, <code>--kv-cache-dtype</code> w vLLM).</p>
-        <p class="hint"><strong>Narzut systemu</strong> — liczony <em>raz</em>. Pulpit, przeglądarka i kompozytor okien zajmują VRAM, zanim uruchomisz jakikolwiek model.</p>
-        <p class="hint"><strong>Narzut na proces</strong> — liczony <em>razy liczba modeli</em>. Każda instancja (Ollama, llama.cpp, vLLM) dostaje własny <strong>kontekst CUDA</strong> — sterownik rezerwuje 0,3–0,5 GiB niezależnie od wielkości modelu — plus <strong>bufory obliczeniowe</strong> na wyniki pośrednie. Jeśli trzymasz wszystkie modele w jednym procesie, zjedź do 0,2.</p>
-        <p class="hint"><strong>Margines fragmentacji</strong> — procent doliczany do całości. Alokator nie upycha bloków idealnie; między nimi zostają nieużywane dziury.</p>
-        <p class="hint">Narzut na proces to reguła kciuka, nie zmierzona stała — inaczej niż mnożniki wag. Zmierz własny: uruchom jeden model i porównaj <code>nvidia-smi --query-gpu=memory.used --format=csv</code> z sumą wag i KV cache z tabeli obok.</p>
+        <summary data-i18n="g.expl"></summary>
+        <p class="hint" data-i18n-html="h.g.explKv"></p>
+        <p class="hint" data-i18n-html="h.g.explOs"></p>
+        <p class="hint" data-i18n-html="h.g.explProc"></p>
+        <p class="hint" data-i18n-html="h.g.explFrag"></p>
+        <p class="hint" data-i18n-html="h.g.explMeasure"></p>
       </details>
     </div>
 
-    <h2>Modele załadowane jednocześnie</h2>
+    <h2 data-i18n="m.title"></h2>
     <div id="models"></div>
-    <button class="btn add" type="button" id="add">+ Dodaj model</button>
+    <button class="btn add" type="button" id="add" data-i18n="m.add"></button>
     <div class="row-btns">
-      <button class="btn ghost" type="button" id="reset">Przywróć domyślne</button>
-      <button class="btn ghost" type="button" id="copy">Kopiuj podsumowanie</button>
+      <button class="btn ghost" type="button" id="reset" data-i18n="m.reset"></button>
+      <button class="btn ghost" type="button" id="copy" data-i18n="m.copy"></button>
       <span class="mini" id="saved" role="status" style="margin:0"></span>
     </div>
   </section>
 
   <!-- ===================== WYNIKI ===================== -->
   <section class="col-b" aria-labelledby="t-res">
-    <h2 id="t-res">Całkowite zużycie VRAM</h2>
+    <h2 id="t-res" data-i18n="r.title"></h2>
 
     <div class="card card-total">
       <div class="total">
@@ -309,44 +329,37 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     </div>
 
     <div class="card">
-      <h3>Alokacja pamięci</h3>
+      <h3 data-i18n="r.alloc"></h3>
       <div class="bar" id="bar" role="img" aria-labelledby="bar-alt"></div>
       <div class="scale"><span>0</span><span id="scale-max">32 GiB</span></div>
       <p id="bar-alt" class="sr"></p>
       <div class="table-wrap">
         <table>
-          <caption>Rozbicie na składniki (GiB). Kolumna „tok/s” to szacunek limitu przepustowości pamięci.</caption>
+          <caption data-i18n="r.caption"></caption>
           <thead>
-            <tr><th scope="col">Składnik</th><th scope="col">Wagi</th><th scope="col">KV cache</th><th scope="col">Narzut</th><th scope="col">Razem</th><th scope="col">~tok/s</th></tr>
+            <tr><th scope="col" data-i18n="r.th.comp"></th><th scope="col" data-i18n="r.th.w"></th><th scope="col" data-i18n="r.th.kv"></th><th scope="col" data-i18n="r.th.over"></th><th scope="col" data-i18n="r.th.total"></th><th scope="col" data-i18n="r.th.tps"></th></tr>
           </thead>
           <tbody id="tbody"></tbody>
-          <tfoot><tr><td>Razem</td><td id="f-w"></td><td id="f-k"></td><td id="f-o"></td><td id="f-t"></td><td></td></tr></tfoot>
+          <tfoot><tr><td data-i18n="r.tf.total"></td><td id="f-w"></td><td id="f-k"></td><td id="f-o"></td><td id="f-t"></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
 
     <div class="card">
-      <h3>Karta graficzna</h3>
-      <label class="f"><span class="lbl">Model GPU</span><select id="gpu"></select></label>
+      <h3 data-i18n="r.gpuCard"></h3>
+      <label class="f"><span class="lbl" data-i18n="r.gpuModel"></span><select id="gpu"></select></label>
       <label class="f" id="custom-wrap" hidden style="margin-top:12px">
-        <span class="lbl">Własny limit VRAM (GiB)</span>
+        <span class="lbl" data-i18n="r.customVram"></span>
         <input type="number" id="custom-vram" min="1" max="1024" step="1" value="32"></label>
       <p class="hint" id="gpu-info" style="margin-top:11px"></p>
     </div>
 
     <div class="card">
-      <h3>Jak to jest liczone</h3>
-      <p class="note"><strong>KV cache</strong> = 2 × warstwy × głowice_KV × wymiar_głowicy × tokeny × bajty/element, liczone osobno dla warstw globalnych (pełny kontekst) i lokalnych (przycięte do okna). Modele z <strong>GQA</strong> mają 4–8× mniej głowic KV niż głowic uwagi, więc szacowanie KV cache z samej liczby parametrów zawyża wynik wielokrotnie.</p>
-      <p class="note" style="margin-top:9px"><strong>Wagi</strong> = parametry × efektywne bajty/wagę. Mnożniki są kalibrowane na realnych plikach modeli klasy 8B, więc uwzględniają skale kwantyzacji i warstwy trzymane w wyższej precyzji.</p>
-      <p class="note" style="margin-top:9px">Czego kalkulator <strong>nie</strong> modeluje:</p>
-      <p class="note"><ul>
-        <li><strong>Uwaga liniowa</strong> (Qwen3.6 / 3.8, Mamba, GDN) — te warstwy mają stan o stałym rozmiarze, tu pominięty. Realnie doda ok. 0,1–0,5 GiB.</li>
-        <li><strong>MLA</strong> (DeepSeek V2/V3/V4) — kompresja KV nawet kilkunastokrotna, wymaga innego wzoru.</li>
-        <li><strong>Modele OCR i VLM</strong> — podane parametry obejmują już wieżę wizyjną, więc wagi się zgadzają. Pamiętaj jednak, że <strong>obraz zjada kontekst</strong>: strona A4 to zwykle 1–2 tys. tokenów (DeepSeek-OCR kompresuje do ok. 100–800). Przy wsadowym przetwarzaniu ustaw kontekst na tyle stron naraz, ile faktycznie podajesz.</li>
-        <li><strong>Kwantyzacja małych modeli</strong> — poniżej ~2 mld parametrów schodzenie do 4 bitów wyraźnie psuje jakość, a oszczędza ułamek GiB. Modele OCR i mowy trzymaj raczej w FP16 lub FP8.</li>
-        <li><strong>Modele mowy</strong> — „kontekst” oznacza tu tokeny <em>audio</em>, nie słowa. XTTS mieści ok. 1000 tokenów (ok. 20 s mowy), Whisper generuje maks. 448 naraz, więc najniższa pozycja z listy i tak je przeszacowuje. Modele typu VITS (MMS-TTS, Piper) nie są autoregresyjne i nie mają KV cache — ustaw im rolę „embedding”.</li>
-        <li>Presety odczytane z <code>config.json</code> (sierpień 2026) — przy nowym modelu <strong>zweryfikuj wartości</strong>, architektury zmieniają się co kwartał.</li>
-      </ul></p>
+      <h3 data-i18n="r.how"></h3>
+      <p class="note" data-i18n-html="h.r.how1"></p>
+      <p class="note" style="margin-top:9px" data-i18n-html="h.r.how2"></p>
+      <p class="note" style="margin-top:9px" data-i18n-html="h.r.howNot"></p>
+      <ul class="note" data-i18n-html="h.r.howList"></ul>
     </div>
   </section>
 </main>
@@ -355,56 +368,56 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
 <template id="tpl">
   <article class="model">
     <header>
-      <label class="f"><span class="lbl"><i class="sw" data-role="swatch"></i>Nazwa modelu</span>
+      <label class="f"><span class="lbl"><i class="sw" data-role="swatch"></i><span data-i18n="tpl.name"></span></span>
         <input type="text" data-f="name" maxlength="80"></label>
-      <button type="button" class="del" data-act="del" title="Usuń model" aria-label="Usuń model">&#10005;</button>
+      <button type="button" class="del" data-act="del" data-i18n-title="tpl.del" data-i18n-aria="tpl.del">&#10005;</button>
     </header>
     <div class="grid">
-      <label class="f"><span class="lbl">Preset architektury</span><select data-f="preset"></select></label>
-      <label class="f"><span class="lbl">Parametry łącznie (mld)</span>
+      <label class="f"><span class="lbl" data-i18n="tpl.preset"></span><select data-f="preset"></select></label>
+      <label class="f"><span class="lbl" data-i18n="tpl.params"></span>
         <input type="number" data-f="params" min="0.05" max="3000" step="0.1"></label>
-      <label class="f"><span class="lbl">Kwantyzacja wag</span><select data-f="quant"></select></label>
-      <label class="f"><span class="lbl">Precyzja KV cache</span><select data-f="kvBits"></select></label>
-      <label class="f"><span class="lbl">Kontekst (tokeny)</span><select data-f="context"></select></label>
-      <label class="f"><span class="lbl">Rola</span>
+      <label class="f"><span class="lbl" data-i18n="tpl.quant"></span><select data-f="quant"></select></label>
+      <label class="f"><span class="lbl" data-i18n="tpl.kvPrec"></span><select data-f="kvBits"></select></label>
+      <label class="f"><span class="lbl" data-i18n="tpl.context"></span><select data-f="context"></select></label>
+      <label class="f"><span class="lbl" data-i18n="tpl.role"></span>
         <select data-f="role">
-          <option value="decoder">Generatywny (LLM)</option>
-          <option value="encoder">Embedding / reranker</option>
+          <option value="decoder" data-i18n="tpl.role.dec"></option>
+          <option value="encoder" data-i18n="tpl.role.enc"></option>
         </select></label>
     </div>
     <details>
-      <summary>Architektura — parametry KV cache</summary>
+      <summary data-i18n="tpl.arch"></summary>
 
-      <p class="hint"><strong>Kwantyzacja wag</strong> i <strong>precyzja KV cache</strong> to dwa różne pokrętła i nie nakładają się na siebie: pierwsze zmienia rozmiar wag, drugie rozmiar bufora kontekstu. Model w Q4_K_M może trzymać cache w FP16 i odwrotnie. Poniższe pola opisują <em>kształt</em> cache’u — ile go jest — a precyzja mówi, ile bajtów zajmuje jedna liczba.</p>
+      <p class="hint" data-i18n-html="h.tpl.archIntro"></p>
 
-      <p class="grp">Uwaga globalna — KV cache rośnie z całym kontekstem</p>
+      <p class="grp" data-i18n="tpl.grpGlobal"></p>
       <div class="grid">
-        <label class="f"><span class="lbl">Warstwy globalne</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.fullLayers"></span>
           <input type="number" data-f="fullLayers" min="0" max="256" step="1"></label>
-        <label class="f"><span class="lbl">Głowice KV</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.kvHeads"></span>
           <input type="number" data-f="kvHeads" min="1" max="256" step="1"></label>
-        <label class="f"><span class="lbl">Wymiar głowicy</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.headDim"></span>
           <input type="number" data-f="headDim" min="8" max="1024" step="8"></label>
       </div>
 
-      <p class="grp">Uwaga lokalna (sliding window) — KV cache ograniczony oknem</p>
+      <p class="grp" data-i18n="tpl.grpLocal"></p>
       <div class="grid">
-        <label class="f"><span class="lbl">Warstwy lokalne</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.localLayers"></span>
           <input type="number" data-f="localLayers" min="0" max="256" step="1"></label>
-        <label class="f"><span class="lbl">Głowice KV (lokalne)</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.localKvHeads"></span>
           <input type="number" data-f="localKvHeads" min="1" max="256" step="1"></label>
-        <label class="f"><span class="lbl">Okno (tokeny)</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.window"></span>
           <input type="number" data-f="window" min="64" max="131072" step="64"></label>
       </div>
 
-      <p class="grp">Mixture of Experts</p>
+      <p class="grp" data-i18n="tpl.grpMoe"></p>
       <div class="grid">
-        <label class="f"><span class="lbl">Parametry aktywne (mld)</span>
+        <label class="f"><span class="lbl" data-i18n="tpl.activeParams"></span>
           <input type="number" data-f="activeParams" min="0" max="3000" step="0.1"></label>
       </div>
-      <p class="hint">0 = model gęsty (dense). Dla MoE VRAM zajmują <em>wszystkie</em> wagi, ale prędkość wyznaczają tylko parametry aktywne.</p>
+      <p class="hint" data-i18n-html="h.tpl.moe"></p>
 
-      <p class="hint">Z <code>config.json</code>: <code>layer_types</code> mówi, ile warstw to <code>full_attention</code>, a ile <code>sliding_attention</code>. Warstw <code>linear_attention</code> (Mamba/GDN) nie wpisuj — mają stan o stałym rozmiarze, niezależny od kontekstu.</p>
+      <p class="hint" data-i18n-html="h.tpl.cfg"></p>
     </details>
     <p class="mini" data-role="sum"></p>
   </article>
@@ -417,6 +430,309 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
   var GB  = 1e9;          // bajtów w GB dziesiętnym
   var STORE = "vram-calc-v2";
   var BW_EFF = 0.75;      // realna sprawność wykorzystania przepustowości, 1 strumień
+
+  /* ============ warstwa językowa ============ */
+
+  // Teksty zaczynające się od "h." trafiają do innerHTML, bo zawierają <strong>,
+  // <code> i <em>. To BEZPIECZNE, bo są to literały z tego pliku, nigdy dane
+  // użytkownika — nazwy modeli wstawiamy wyłącznie przez textContent i .value.
+  var I18N = {
+    pl: {
+      "lang.html": "pl",
+      "lede": "Szacuje zapotrzebowanie na pamięć przy jednoczesnym załadowaniu kilku modeli. KV cache liczony z rzeczywistej architektury (warstwy × głowice KV × wymiar głowicy), a nie z samej liczby parametrów.",
+
+      "g.title": "Ustawienia globalne",
+      "h.g.intro": "Precyzja KV cache: FP8 zmniejsza bufor kontekstu o połowę względem FP16. To ustawienie <strong>domyślne</strong> — każdy model może je nadpisać w swojej karcie, bo precyzję cache’u zadaje się osobno dla każdego procesu serwera.",
+      "g.kvPrec": "Precyzja KV cache — domyślna",
+      "g.os": "Narzut systemu (GiB)",
+      "g.os.0": "Bez systemu — 0",
+      "g.os.02": "Linux headless — 0,2",
+      "g.os.06": "Linux pulpit — 0,6",
+      "g.os.15": "Windows — 1,5",
+      "g.proc": "Narzut na proces (GiB)",
+      "g.proc.title": "Kontekst CUDA + bufory obliczeniowe. Liczone osobno dla każdego modelu.",
+      "g.frag": "Margines fragmentacji",
+      "g.frag.0": "0% — brak",
+      "g.frag.5": "5% — zalecane",
+      "g.frag.10": "10% — ostrożnie",
+      "g.expl": "Co oznaczają te ustawienia?",
+      "h.g.explKv": "<strong>Precyzja KV cache</strong> — ile bajtów zajmuje jedna liczba w pamięci kontekstu. FP8 to te same dane zapisane drobniej: połowa miejsca przy minimalnej stracie jakości. Ustawienie z tego panelu jest domyślne dla wszystkich modeli, ale każdy może mieć własne — w praktyce każdy model chodzi jako osobny serwer, a precyzję cache’u zadaje się per proces (<code>--cache-type-k</code> w llama.cpp, <code>--kv-cache-dtype</code> w vLLM).",
+      "h.g.explOs": "<strong>Narzut systemu</strong> — liczony <em>raz</em>. Pulpit, przeglądarka i kompozytor okien zajmują VRAM, zanim uruchomisz jakikolwiek model.",
+      "h.g.explProc": "<strong>Narzut na proces</strong> — liczony <em>razy liczba modeli</em>. Każda instancja (Ollama, llama.cpp, vLLM) dostaje własny <strong>kontekst CUDA</strong> — sterownik rezerwuje 0,3–0,5 GiB niezależnie od wielkości modelu — plus <strong>bufory obliczeniowe</strong> na wyniki pośrednie. Jeśli trzymasz wszystkie modele w jednym procesie, zjedź do 0,2.",
+      "h.g.explFrag": "<strong>Margines fragmentacji</strong> — procent doliczany do całości. Alokator nie upycha bloków idealnie; między nimi zostają nieużywane dziury.",
+      "h.g.explMeasure": "Narzut na proces to reguła kciuka, nie zmierzona stała — inaczej niż mnożniki wag. Zmierz własny: uruchom jeden model i porównaj <code>nvidia-smi --query-gpu=memory.used --format=csv</code> z sumą wag i KV cache z tabeli obok.",
+
+      "m.title": "Modele załadowane jednocześnie",
+      "m.add": "+ Dodaj model",
+      "m.reset": "Przywróć domyślne",
+      "m.copy": "Kopiuj podsumowanie",
+
+      "r.title": "Całkowite zużycie VRAM",
+      "r.alloc": "Alokacja pamięci",
+      "r.caption": "Rozbicie na składniki (GiB). Kolumna „tok/s” to szacunek limitu przepustowości pamięci.",
+      "r.th.comp": "Składnik", "r.th.w": "Wagi", "r.th.kv": "KV cache",
+      "r.th.over": "Narzut", "r.th.total": "Razem", "r.th.tps": "~tok/s",
+      "r.tf.total": "Razem",
+      "r.gpuCard": "Karta graficzna",
+      "r.gpuModel": "Model GPU",
+      "r.customVram": "Własny limit VRAM (GiB)",
+      "r.how": "Jak to jest liczone",
+      "h.r.how1": "<strong>KV cache</strong> = 2 × warstwy × głowice_KV × wymiar_głowicy × tokeny × bajty/element, liczone osobno dla warstw globalnych (pełny kontekst) i lokalnych (przycięte do okna). Modele z <strong>GQA</strong> mają 4–8× mniej głowic KV niż głowic uwagi, więc szacowanie KV cache z samej liczby parametrów zawyża wynik wielokrotnie.",
+      "h.r.how2": "<strong>Wagi</strong> = parametry × efektywne bajty/wagę. Mnożniki są kalibrowane na realnych plikach modeli klasy 8B, więc uwzględniają skale kwantyzacji i warstwy trzymane w wyższej precyzji.",
+      "h.r.howNot": "Czego kalkulator <strong>nie</strong> modeluje:",
+      "h.r.howList": "<li><strong>Uwaga liniowa</strong> (Qwen3.6 / 3.8, Mamba, GDN) — te warstwy mają stan o stałym rozmiarze, tu pominięty. Realnie doda ok. 0,1–0,5 GiB.</li><li><strong>MLA</strong> (DeepSeek V2/V3/V4) — kompresja KV nawet kilkunastokrotna, wymaga innego wzoru.</li><li><strong>Modele OCR i VLM</strong> — podane parametry obejmują już wieżę wizyjną, więc wagi się zgadzają. Pamiętaj jednak, że <strong>obraz zjada kontekst</strong>: strona A4 to zwykle 1–2 tys. tokenów (DeepSeek-OCR kompresuje do ok. 100–800). Przy wsadowym przetwarzaniu ustaw kontekst na tyle stron naraz, ile faktycznie podajesz.</li><li><strong>Kwantyzacja małych modeli</strong> — poniżej ~2 mld parametrów schodzenie do 4 bitów wyraźnie psuje jakość, a oszczędza ułamek GiB. Modele OCR i mowy trzymaj raczej w FP16 lub FP8.</li><li><strong>Modele mowy</strong> — „kontekst” oznacza tu tokeny <em>audio</em>, nie słowa. XTTS mieści ok. 1000 tokenów (ok. 20 s mowy), Whisper generuje maks. 448 naraz, więc najniższa pozycja z listy i tak je przeszacowuje. Modele typu VITS (MMS-TTS, Piper) nie są autoregresyjne i nie mają KV cache — ustaw im rolę „embedding”.</li><li>Presety odczytane z <code>config.json</code> (sierpień 2026) — przy nowym modelu <strong>zweryfikuj wartości</strong>, architektury zmieniają się co kwartał.</li>",
+
+      "tpl.name": "Nazwa modelu",
+      "tpl.del": "Usuń model",
+      "tpl.preset": "Preset architektury",
+      "tpl.params": "Parametry łącznie (mld)",
+      "tpl.quant": "Kwantyzacja wag",
+      "tpl.kvPrec": "Precyzja KV cache",
+      "tpl.context": "Kontekst (tokeny)",
+      "tpl.role": "Rola",
+      "tpl.role.dec": "Generatywny (LLM)",
+      "tpl.role.enc": "Embedding / reranker",
+      "tpl.arch": "Architektura — parametry KV cache",
+      "h.tpl.archIntro": "<strong>Kwantyzacja wag</strong> i <strong>precyzja KV cache</strong> to dwa różne pokrętła i nie nakładają się na siebie: pierwsze zmienia rozmiar wag, drugie rozmiar bufora kontekstu. Model w Q4_K_M może trzymać cache w FP16 i odwrotnie. Poniższe pola opisują <em>kształt</em> cache’u — ile go jest — a precyzja mówi, ile bajtów zajmuje jedna liczba.",
+      "tpl.grpGlobal": "Uwaga globalna — KV cache rośnie z całym kontekstem",
+      "tpl.fullLayers": "Warstwy globalne",
+      "tpl.kvHeads": "Głowice KV",
+      "tpl.headDim": "Wymiar głowicy",
+      "tpl.grpLocal": "Uwaga lokalna (sliding window) — KV cache ograniczony oknem",
+      "tpl.localLayers": "Warstwy lokalne",
+      "tpl.localKvHeads": "Głowice KV (lokalne)",
+      "tpl.window": "Okno (tokeny)",
+      "tpl.grpMoe": "Mixture of Experts",
+      "tpl.activeParams": "Parametry aktywne (mld)",
+      "h.tpl.moe": "0 = model gęsty (dense). Dla MoE VRAM zajmują <em>wszystkie</em> wagi, ale prędkość wyznaczają tylko parametry aktywne.",
+      "h.tpl.cfg": "Z <code>config.json</code>: <code>layer_types</code> mówi, ile warstw to <code>full_attention</code>, a ile <code>sliding_attention</code>. Warstw <code>linear_attention</code> (Mamba/GDN) nie wpisuj — mają stan o stałym rozmiarze, niezależny od kontekstu.",
+
+      "quant.FP16": "FP16 / BF16", "quant.FP8": "FP8 (8-bit)", "quant.Q8": "INT8 / Q8_0",
+      "quant.Q6_K": "Q6_K — 6,6 bpw", "quant.Q5_K_M": "Q5_K_M — 5,7 bpw",
+      "quant.NVFP4": "NVFP4 — 4-bit", "quant.AWQ4": "AWQ / GPTQ INT4",
+      "quant.Q4_K_M": "Q4_K_M — 5,0 bpw", "quant.Q3_K_M": "Q3_K_M — 4,0 bpw", "quant.Q2_K": "Q2_K — 3,3 bpw",
+
+      "kv.16": "FP16 / BF16", "kv.8": "FP8 — o 50% mniej", "kv.4": "Q4 — o 75% mniej",
+      "kv.inherit": "Jak globalnie — {0}",
+      "kv.own": " (własna)",
+
+      "grp.2026": "Generacja 2026", "grp.2025": "Generacja 2025",
+      "grp.ocr": "OCR / parsowanie dokumentów", "grp.speech": "Mowa — TTS / STT (polski)",
+      "grp.emb": "Embedding / reranker",
+
+      "preset.manual": "— ręcznie —",
+      "preset.l2-7b": "Llama 2 7B (MHA, bez GQA)",
+      "preset.mms-tts-pl": "MMS-TTS polski (VITS)",
+      "gpu.custom": "Inna / własny limit…",
+
+      "def.chat": "Czat / agent (MoE)", "def.vision": "Vision / dokumenty", "def.emb": "Embedding (RAG)",
+      "model.n": "Model {0}",
+      "ctx.tokens": "{0}K tokenów",
+
+      "flash.saved": "zapisano", "flash.saveFail": "nie udało się zapisać",
+      "flash.restored": "przywrócono domyślne", "flash.copied": "skopiowano",
+      "flash.copyBlocked": "kopiowanie zablokowane", "flash.copyNone": "kopiowanie niedostępne",
+
+      "badge.over": "⚠️ Brakuje {0} GiB — {1}",
+      "badge.warn": "⚡ {0}% pojemności ({1}) — mały zapas",
+      "badge.ok": "✅ Mieści się w {0} GiB — {1}",
+
+      "bar.os": "System operacyjny",
+      "bar.w": "{0} — wagi", "bar.kv": "{0} — KV cache", "bar.proc": "{0} — narzut procesu",
+      "bar.frag": "Margines fragmentacji",
+      "bar.limit": "Limit karty: {0} GiB",
+      "bar.alt": "Wykorzystanie: {0} z {1} GiB, czyli {2} procent.",
+      "tbl.frag": "Fragmentacja {0}%",
+
+      "gpu.info": "Przepustowość {0} GB/s. Szacunek tok/s zakłada {1}% sprawności i pojedynczy strumień — batch podnosi przepustowość łączną, nie prędkość jednej odpowiedzi.",
+      "gpu.infoNone": "Brak danych o przepustowości dla karty własnej, więc szacunek prędkości jest niedostępny.",
+
+      "sum.w": "wagi {0} GiB", "sum.kv": "KV cache {0}", "sum.total": "razem {0} GiB",
+      "sum.tps": "~{0} tok/s", "sum.moe": "MoE: {0} mld aktywnych", "sum.window": "okno {0} tok.",
+
+      "warn.a": " ({0}) nie ma sprzętowego FP8. Ośmiobitowy KV cache uzyskasz na niej tylko programowo — ",
+      "warn.b": " w llama.cpp — co kosztuje trochę wydajności, ale oszczędność pamięci jest realna. Natomiast ",
+      "warn.c": " w vLLM wymaga Ady lub nowszej. Dotyczy: ",
+
+      "copy.limit": "Limit: {0} GiB · KV cache domyślnie: {1}",
+      "copy.model": "• {0}  ({1} mld, wagi {2}, KV {3}{4}, {5}K ctx)",
+      "copy.line": "    wagi {0} + KV {1} + narzut {2} = {3} GiB",
+      "copy.tps": "   (~{0} tok/s)",
+      "copy.note": "* precyzja KV cache nadpisana na tym modelu",
+      "copy.sys": "System: {0} GiB · fragmentacja: {1} GiB",
+      "copy.total": "RAZEM: {0} / {1} GiB"
+    },
+
+    en: {
+      "lang.html": "en",
+      "lede": "Estimates memory demand when several models are loaded at once. KV cache is computed from the real architecture (layers × KV heads × head dimension), not guessed from parameter count.",
+
+      "g.title": "Global settings",
+      "h.g.intro": "KV cache precision: FP8 halves the context buffer compared to FP16. This is the <strong>default</strong> — every model can override it on its own card, because cache precision is set separately for each server process.",
+      "g.kvPrec": "KV cache precision — default",
+      "g.os": "System overhead (GiB)",
+      "g.os.0": "No desktop — 0",
+      "g.os.02": "Linux headless — 0.2",
+      "g.os.06": "Linux desktop — 0.6",
+      "g.os.15": "Windows — 1.5",
+      "g.proc": "Per-process overhead (GiB)",
+      "g.proc.title": "CUDA context + compute buffers. Counted separately for each model.",
+      "g.frag": "Fragmentation margin",
+      "g.frag.0": "0% — none",
+      "g.frag.5": "5% — recommended",
+      "g.frag.10": "10% — cautious",
+      "g.expl": "What do these settings mean?",
+      "h.g.explKv": "<strong>KV cache precision</strong> — how many bytes one number in the context memory takes. FP8 is the same data stored more finely: half the space at minimal quality loss. The value in this panel is the default for every model, but each one can differ — in practice every model runs as its own server, and cache precision is set per process (<code>--cache-type-k</code> in llama.cpp, <code>--kv-cache-dtype</code> in vLLM).",
+      "h.g.explOs": "<strong>System overhead</strong> — counted <em>once</em>. Your desktop, browser and window compositor take VRAM before you start any model at all.",
+      "h.g.explProc": "<strong>Per-process overhead</strong> — counted <em>times the number of models</em>. Every instance (Ollama, llama.cpp, vLLM) gets its own <strong>CUDA context</strong> — the driver reserves 0.3–0.5 GiB regardless of model size — plus <strong>compute buffers</strong> for intermediate results. If you keep all models in one process, drop this to 0.2.",
+      "h.g.explFrag": "<strong>Fragmentation margin</strong> — a percentage added to the total. The allocator does not pack blocks perfectly; unused gaps are left between them.",
+      "h.g.explMeasure": "Per-process overhead is a rule of thumb, not a measured constant — unlike the weight multipliers. Measure your own: start one model and compare <code>nvidia-smi --query-gpu=memory.used --format=csv</code> against the weights and KV cache totals in the table.",
+
+      "m.title": "Models loaded simultaneously",
+      "m.add": "+ Add model",
+      "m.reset": "Restore defaults",
+      "m.copy": "Copy summary",
+
+      "r.title": "Total VRAM usage",
+      "r.alloc": "Memory allocation",
+      "r.caption": "Breakdown by component (GiB). The “tok/s” column estimates the memory-bandwidth ceiling.",
+      "r.th.comp": "Component", "r.th.w": "Weights", "r.th.kv": "KV cache",
+      "r.th.over": "Overhead", "r.th.total": "Total", "r.th.tps": "~tok/s",
+      "r.tf.total": "Total",
+      "r.gpuCard": "Graphics card",
+      "r.gpuModel": "GPU model",
+      "r.customVram": "Custom VRAM limit (GiB)",
+      "r.how": "How this is calculated",
+      "h.r.how1": "<strong>KV cache</strong> = 2 × layers × KV_heads × head_dim × tokens × bytes/element, computed separately for global layers (full context) and local ones (clamped to the window). Models with <strong>GQA</strong> have 4–8× fewer KV heads than attention heads, so estimating KV cache from parameter count alone overshoots by a wide margin.",
+      "h.r.how2": "<strong>Weights</strong> = parameters × effective bytes/weight. The multipliers are calibrated against real 8B-class model files, so they account for quantization scales and layers kept at higher precision.",
+      "h.r.howNot": "What this calculator does <strong>not</strong> model:",
+      "h.r.howList": "<li><strong>Linear attention</strong> (Qwen3.6 / 3.8, Mamba, GDN) — those layers hold a fixed-size state, omitted here. In practice it adds roughly 0.1–0.5 GiB.</li><li><strong>MLA</strong> (DeepSeek V2/V3/V4) — KV compression of more than tenfold; it needs a different formula.</li><li><strong>OCR and VLM models</strong> — the parameter counts already include the vision tower, so the weights are right. Keep in mind though that <strong>images eat context</strong>: an A4 page is typically 1–2k tokens (DeepSeek-OCR compresses to roughly 100–800). For batch processing, set the context to as many pages at once as you actually feed it.</li><li><strong>Quantizing small models</strong> — below ~2B parameters, dropping to 4 bits clearly hurts quality while saving a fraction of a GiB. Keep OCR and speech models at FP16 or FP8.</li><li><strong>Speech models</strong> — “context” here means <em>audio</em> tokens, not words. XTTS holds about 1000 tokens (roughly 20 s of speech) and Whisper generates at most 448 at a time, so even the lowest entry on the list overestimates them. VITS-style models (MMS-TTS, Piper) are not autoregressive and have no KV cache — set their role to “embedding”.</li><li>Presets were read from <code>config.json</code> (August 2026) — for a new model, <strong>verify the values</strong>; architectures change every quarter.</li>",
+
+      "tpl.name": "Model name",
+      "tpl.del": "Remove model",
+      "tpl.preset": "Architecture preset",
+      "tpl.params": "Total parameters (B)",
+      "tpl.quant": "Weight quantization",
+      "tpl.kvPrec": "KV cache precision",
+      "tpl.context": "Context (tokens)",
+      "tpl.role": "Role",
+      "tpl.role.dec": "Generative (LLM)",
+      "tpl.role.enc": "Embedding / reranker",
+      "tpl.arch": "Architecture — KV cache parameters",
+      "h.tpl.archIntro": "<strong>Weight quantization</strong> and <strong>KV cache precision</strong> are two different dials and they do not overlap: the first changes the size of the weights, the second the size of the context buffer. A model in Q4_K_M can keep its cache in FP16 and vice versa. The fields below describe the <em>shape</em> of the cache — how much of it there is — while precision says how many bytes one number takes.",
+      "tpl.grpGlobal": "Global attention — KV cache grows with the full context",
+      "tpl.fullLayers": "Global layers",
+      "tpl.kvHeads": "KV heads",
+      "tpl.headDim": "Head dimension",
+      "tpl.grpLocal": "Local attention (sliding window) — KV cache capped by the window",
+      "tpl.localLayers": "Local layers",
+      "tpl.localKvHeads": "KV heads (local)",
+      "tpl.window": "Window (tokens)",
+      "tpl.grpMoe": "Mixture of Experts",
+      "tpl.activeParams": "Active parameters (B)",
+      "h.tpl.moe": "0 = dense model. For MoE, <em>all</em> weights occupy VRAM, but only the active parameters determine speed.",
+      "h.tpl.cfg": "From <code>config.json</code>: <code>layer_types</code> tells you how many layers are <code>full_attention</code> and how many are <code>sliding_attention</code>. Do not enter <code>linear_attention</code> layers (Mamba/GDN) — they hold a fixed-size state, independent of context.",
+
+      "quant.FP16": "FP16 / BF16", "quant.FP8": "FP8 (8-bit)", "quant.Q8": "INT8 / Q8_0",
+      "quant.Q6_K": "Q6_K — 6.6 bpw", "quant.Q5_K_M": "Q5_K_M — 5.7 bpw",
+      "quant.NVFP4": "NVFP4 — 4-bit", "quant.AWQ4": "AWQ / GPTQ INT4",
+      "quant.Q4_K_M": "Q4_K_M — 5.0 bpw", "quant.Q3_K_M": "Q3_K_M — 4.0 bpw", "quant.Q2_K": "Q2_K — 3.3 bpw",
+
+      "kv.16": "FP16 / BF16", "kv.8": "FP8 — 50% less", "kv.4": "Q4 — 75% less",
+      "kv.inherit": "Same as global — {0}",
+      "kv.own": " (own)",
+
+      "grp.2026": "2026 generation", "grp.2025": "2025 generation",
+      "grp.ocr": "OCR / document parsing", "grp.speech": "Speech — TTS / STT",
+      "grp.emb": "Embedding / reranker",
+
+      "preset.manual": "— manual —",
+      "preset.l2-7b": "Llama 2 7B (MHA, no GQA)",
+      "preset.mms-tts-pl": "MMS-TTS Polish (VITS)",
+      "gpu.custom": "Other / custom limit…",
+
+      "def.chat": "Chat / agent (MoE)", "def.vision": "Vision / documents", "def.emb": "Embedding (RAG)",
+      "model.n": "Model {0}",
+      "ctx.tokens": "{0}K tokens",
+
+      "flash.saved": "saved", "flash.saveFail": "could not save",
+      "flash.restored": "defaults restored", "flash.copied": "copied",
+      "flash.copyBlocked": "copying blocked", "flash.copyNone": "copying unavailable",
+
+      "badge.over": "⚠️ {0} GiB short — {1}",
+      "badge.warn": "⚡ {0}% of capacity ({1}) — little headroom",
+      "badge.ok": "✅ Fits in {0} GiB — {1}",
+
+      "bar.os": "Operating system",
+      "bar.w": "{0} — weights", "bar.kv": "{0} — KV cache", "bar.proc": "{0} — process overhead",
+      "bar.frag": "Fragmentation margin",
+      "bar.limit": "Card limit: {0} GiB",
+      "bar.alt": "Usage: {0} of {1} GiB, that is {2} percent.",
+      "tbl.frag": "Fragmentation {0}%",
+
+      "gpu.info": "Bandwidth {0} GB/s. The tok/s estimate assumes {1}% efficiency and a single stream — batching raises aggregate throughput, not the speed of one reply.",
+      "gpu.infoNone": "No bandwidth data for a custom card, so the speed estimate is unavailable.",
+
+      "sum.w": "weights {0} GiB", "sum.kv": "KV cache {0}", "sum.total": "total {0} GiB",
+      "sum.tps": "~{0} tok/s", "sum.moe": "MoE: {0}B active", "sum.window": "window {0} tok.",
+
+      "warn.a": " ({0}) has no hardware FP8. You can only get an 8-bit KV cache on it in software — ",
+      "warn.b": " in llama.cpp — which costs some performance, though the memory saving is real. Whereas ",
+      "warn.c": " in vLLM requires Ada or newer. Affects: ",
+
+      "copy.limit": "Limit: {0} GiB · KV cache default: {1}",
+      "copy.model": "• {0}  ({1}B, weights {2}, KV {3}{4}, {5}K ctx)",
+      "copy.line": "    weights {0} + KV {1} + overhead {2} = {3} GiB",
+      "copy.tps": "   (~{0} tok/s)",
+      "copy.note": "* KV cache precision overridden on this model",
+      "copy.sys": "System: {0} GiB · fragmentation: {1} GiB",
+      "copy.total": "TOTAL: {0} / {1} GiB"
+    }
+  };
+
+  var LANG = "pl";
+
+  // t("badge.ok", "32", "RTX 5090") — {0}, {1}… podmieniane pozycyjnie.
+  function t(key) {
+    var s = I18N[LANG][key];
+    if (s === undefined) s = I18N.pl[key];
+    if (s === undefined) return key;
+    for (var i = 1; i < arguments.length; i++) {
+      s = s.split("{" + (i - 1) + "}").join(String(arguments[i]));
+    }
+    return s;
+  }
+
+  // Nazwy modeli i kart to w większości nazwy własne — tłumaczymy tylko te
+  // nieliczne, które zawierają zwykłe słowa ("— ręcznie —", "bez GQA", "polski").
+  function tOpt(key, fallback) {
+    var s = I18N[LANG][key];
+    return s === undefined ? fallback : s;
+  }
+  function presetName(p) { return tOpt("preset." + p.id, p.name); }
+  function gpuName(g)    { return tOpt("gpu." + g.id, g.name); }
+
+  // Wstawia teksty w elementy oznaczone data-i18n*. Zakres (root) jest opcjonalny,
+  // bo świeżo sklonowana karta modelu też musi przejść tłumaczenie.
+  function applyI18nIn(root) {
+    function all(sel) {
+      if (root) return root.querySelectorAll(sel);
+      return document.querySelectorAll ? document.querySelectorAll(sel) : [];
+    }
+    Array.prototype.forEach.call(all("[data-i18n]"), function (el) {
+      el.textContent = t(el.getAttribute("data-i18n"));
+    });
+    // innerHTML tylko dla literałów ze słownika — nigdy dla danych użytkownika
+    Array.prototype.forEach.call(all("[data-i18n-html]"), function (el) {
+      el.innerHTML = t(el.getAttribute("data-i18n-html"));
+    });
+    Array.prototype.forEach.call(all("[data-i18n-title]"), function (el) {
+      el.title = t(el.getAttribute("data-i18n-title"));
+    });
+    Array.prototype.forEach.call(all("[data-i18n-aria]"), function (el) {
+      el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
+    });
+  }
 
   /* ============ dane referencyjne ============ */
 
@@ -565,11 +881,11 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
 
   function defaults() {
     return {
-      gpu: "rtx5090", customVram: 32, kvBits: 16, os: 1.5, proc: 0.6, frag: 0.05,
+      lang: LANG, gpu: "rtx5090", customVram: 32, kvBits: 16, os: 1.5, proc: 0.6, frag: 0.05,
       models: [
-        mk(1, "Czat / agent (MoE)", "gptoss-20",   "Q4_K_M", 32768),
-        mk(2, "Vision / dokumenty", "gemma4-12",   "Q4_K_M", 32768),
-        mk(3, "Embedding (RAG)",    "qwen3emb-06", "FP16",   4096)
+        mk(1, t("def.chat"),   "gptoss-20",   "Q4_K_M", 32768),
+        mk(2, t("def.vision"), "gemma4-12",   "Q4_K_M", 32768),
+        mk(3, t("def.emb"),    "qwen3emb-06", "FP16",   4096)
       ]
     };
   }
@@ -591,8 +907,13 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
   function $(id) { return document.getElementById(id); }
   function num(v, fb) { var n = parseFloat(v); return isFinite(n) ? n : fb; }
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
-  function fmt(n, d) { return n.toFixed(d === undefined ? 2 : d).replace(".", ","); }
+  function fmt(n, d) {
+    var s = n.toFixed(d === undefined ? 2 : d);
+    return LANG === "pl" ? s.replace(".", ",") : s;   // PL uzywa przecinka dziesietnego
+  }
   function fmtLimit(v) { return fmt(v, v % 1 ? 1 : 0); }
+  // liczba bez wymuszonej liczby miejsc po przecinku (params, activeParams)
+  function numStr(v) { var s = String(v); return LANG === "pl" ? s.replace(".", ",") : s; }
 
   // Wczytanie stanu z localStorage z pełną walidacją — plik mógł zostać
   // zapisany przez starszą wersję albo ręcznie zmodyfikowany.
@@ -604,7 +925,7 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
       if (!o || !Array.isArray(o.models) || !o.models.length) return null;
       var d = defaults();
       o.models = o.models.slice(0, 24).map(function (m, i) {
-        var name = typeof m.name === "string" && m.name.trim() ? m.name.slice(0, 80) : "Model " + (i + 1);
+        var name = typeof m.name === "string" && m.name.trim() ? m.name.slice(0, 80) : t("model.n", i + 1);
         return {
           id: i + 1, name: name,
           preset: PRESETS.some(function (p) { return p.id === m.preset; }) ? m.preset : "manual",
@@ -624,6 +945,7 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
           role: m.role === "encoder" ? "encoder" : "decoder"
         };
       });
+      o.lang = I18N[o.lang] ? o.lang : "pl";
       o.gpu = GPUS.some(function (g) { return g.id === o.gpu; }) ? o.gpu : d.gpu;
       o.customVram = clamp(num(o.customVram, 32), 1, 1024);
       o.kvBits = KV_BITS.indexOf(num(o.kvBits, 16)) >= 0 ? num(o.kvBits, 16) : 16;
@@ -635,13 +957,14 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
   }
 
   var S = load() || defaults();
+  LANG = I18N[S.lang] ? S.lang : "pl";
 
   var saveTimer = null;
   function save() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
-      try { localStorage.setItem(STORE, JSON.stringify(S)); flash("zapisano"); }
-      catch (e) { flash("nie udało się zapisać"); }
+      try { localStorage.setItem(STORE, JSON.stringify(S)); flash(t("flash.saved")); }
+      catch (e) { flash(t("flash.saveFail")); }
     }, 400);
   }
   function flash(msg) {
@@ -722,6 +1045,7 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     S.models.forEach(function (m, i) {
       var node = tpl.content.firstElementChild.cloneNode(true);
       node.dataset.id = String(m.id);
+      applyI18nIn(node);
 
       // ten sam indeks palety, którego compute() użyje dla paska i tabeli
       var accent = COLORS[i % COLORS.length];
@@ -739,28 +1063,28 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
         if (p.group) {
           if (!groups[p.group]) {
             groups[p.group] = document.createElement("optgroup");
-            groups[p.group].label = PRESET_GROUPS[p.group] || p.group;
+            groups[p.group].label = t("grp." + p.group);
             pre.appendChild(groups[p.group]);
           }
           target = groups[p.group];
         }
-        target.appendChild(new Option(p.name, p.id, false, p.id === m.preset));
+        target.appendChild(new Option(presetName(p), p.id, false, p.id === m.preset));
       });
 
       var qn = node.querySelector("[data-f=quant]");
-      Object.keys(QUANT).forEach(function (k) { qn.appendChild(new Option(QUANT[k].label, k, false, k === m.quant)); });
+      Object.keys(QUANT).forEach(function (k) { qn.appendChild(new Option(t("quant." + k), k, false, k === m.quant)); });
 
       // Pierwsza pozycja dziedziczy ustawienie globalne i pokazuje jego bieżącą
       // wartość, żeby było widać, co model faktycznie dostanie.
       var kv = node.querySelector("[data-f=kvBits]");
-      kv.appendChild(new Option("Jak globalnie — " + kvLabel(S.kvBits), "0", false, !(KV_BITS.indexOf(m.kvBits) >= 0)));
+      kv.appendChild(new Option(t("kv.inherit", kvLabel(S.kvBits)), "0", false, !(KV_BITS.indexOf(m.kvBits) >= 0)));
       KV_PREC.forEach(function (p) {
-        kv.appendChild(new Option(p.label, String(p.bits), false, p.bits === m.kvBits));
+        kv.appendChild(new Option(t("kv." + p.bits), String(p.bits), false, p.bits === m.kvBits));
       });
 
       var cx = node.querySelector("[data-f=context]");
       CONTEXTS.forEach(function (c) {
-        cx.appendChild(new Option((c / 1024) + "K tokenów", String(c), false, c === m.context));
+        cx.appendChild(new Option(t("ctx.tokens", c / 1024), String(c), false, c === m.context));
       });
 
       ["params", "activeParams", "fullLayers", "kvHeads", "headDim",
@@ -780,14 +1104,14 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     r.rows.forEach(function (row) {
       var node = $("models").querySelector('[data-id="' + row.m.id + '"]');
       if (!node) return;
-      var parts = ["wagi " + fmt(row.weights) + " GiB"];
-      parts.push("KV cache " + (row.m.role === "encoder"
+      var parts = [t("sum.w", fmt(row.weights))];
+      parts.push(t("sum.kv", row.m.role === "encoder"
         ? "—"
-        : fmt(row.kv) + " GiB @ " + kvLabel(row.kvBits) + (row.kvInherited ? "" : " (własna)")));
-      parts.push("razem " + fmt(row.total) + " GiB");
-      if (row.tps) parts.push("~" + Math.round(row.tps) + " tok/s");
-      if (row.m.activeParams > 0) parts.push("MoE: " + String(row.m.activeParams).replace(".", ",") + " mld aktywnych");
-      if (row.m.localLayers > 0) parts.push("okno " + row.m.window + " tok.");
+        : fmt(row.kv) + " GiB @ " + kvLabel(row.kvBits) + (row.kvInherited ? "" : t("kv.own"))));
+      parts.push(t("sum.total", fmt(row.total)));
+      if (row.tps) parts.push(t("sum.tps", Math.round(row.tps)));
+      if (row.m.activeParams > 0) parts.push(t("sum.moe", numStr(row.m.activeParams)));
+      if (row.m.localLayers > 0) parts.push(t("sum.window", row.m.window));
       node.querySelector("[data-role=sum]").textContent = parts.join(" · ");
     });
   }
@@ -837,12 +1161,12 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     function bold(s) { var b = document.createElement("strong"); b.textContent = s; body.appendChild(b); }
     function code(s) { var c = document.createElement("code"); c.textContent = s; body.appendChild(c); }
 
-    bold(r.g.name.replace(/\s*\(.*\)\s*/, ""));
-    txt(" (" + (ARCH_NAME[arch] || arch) + ") nie ma sprzętowego FP8. Ośmiobitowy KV cache uzyskasz na niej tylko programowo — ");
+    bold(gpuName(r.g).replace(/\s*\(.*\)\s*/, ""));
+    txt(t("warn.a", ARCH_NAME[arch] || arch));
     code("--cache-type-k q8_0");
-    txt(" w llama.cpp — co kosztuje trochę wydajności, ale oszczędność pamięci jest realna. Natomiast ");
+    txt(t("warn.b"));
     code("--kv-cache-dtype fp8");
-    txt(" w vLLM wymaga Ady lub nowszej. Dotyczy: ");
+    txt(t("warn.c"));
     bold(hit.map(function (row) { return row.m.name; }).join(", ") + ".");
 
     el.appendChild(ico);
@@ -864,21 +1188,21 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     $("total").className = "n " + cls;
     var b = $("badge");
     b.className = "badge " + cls;
-    if (cls === "bad")       b.textContent = "⚠️ Brakuje " + fmt(r.total - limit, 1) + " GiB — " + short;
-    else if (cls === "warn") b.textContent = "⚡ " + Math.round(pct * 100) + "% pojemności (" + short + ") — mały zapas";
-    else                     b.textContent = "✅ Mieści się w " + fmtLimit(limit) + " GiB — " + short;
+    if (cls === "bad")       b.textContent = t("badge.over", fmt(r.total - limit, 1), short);
+    else if (cls === "warn") b.textContent = t("badge.warn", Math.round(pct * 100), short);
+    else                     b.textContent = t("badge.ok", fmtLimit(limit), short);
 
     // --- pasek alokacji ---
     var max = Math.max(limit, r.total);
     var bar = $("bar");
     bar.textContent = "";
-    var segs = [{ l: "System operacyjny", v: r.os, c: "#94a3b8" }];
+    var segs = [{ l: t("bar.os"), v: r.os, c: "#94a3b8" }];
     r.rows.forEach(function (row) {
-      segs.push({ l: row.m.name + " — wagi", v: row.weights, c: row.color });
-      if (row.kv > 0)   segs.push({ l: row.m.name + " — KV cache", v: row.kv, c: rgba(row.color, 0.45) });
-      if (row.over > 0) segs.push({ l: row.m.name + " — narzut procesu", v: row.over, c: rgba(row.color, 0.2) });
+      segs.push({ l: t("bar.w", row.m.name), v: row.weights, c: row.color });
+      if (row.kv > 0)   segs.push({ l: t("bar.kv", row.m.name), v: row.kv, c: rgba(row.color, 0.45) });
+      if (row.over > 0) segs.push({ l: t("bar.proc", row.m.name), v: row.over, c: rgba(row.color, 0.2) });
     });
-    if (r.frag > 0) segs.push({ l: "Margines fragmentacji", v: r.frag, c: "#cbd5e1" });
+    if (r.frag > 0) segs.push({ l: t("bar.frag"), v: r.frag, c: "#cbd5e1" });
     segs.forEach(function (s) {
       if (s.v <= 0) return;
       var d = document.createElement("div");
@@ -892,12 +1216,11 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
       var mark = document.createElement("div");
       mark.className = "limit";
       mark.style.left = (limit / max * 100) + "%";
-      mark.title = "Limit karty: " + fmtLimit(limit) + " GiB";
+      mark.title = t("bar.limit", fmtLimit(limit));
       bar.appendChild(mark);
     }
     $("scale-max").textContent = fmt(max, 0) + " GiB";
-    $("bar-alt").textContent = "Wykorzystanie: " + fmt(r.total, 1) + " z " + fmtLimit(limit) +
-      " GiB, czyli " + Math.round(pct * 100) + " procent.";
+    $("bar-alt").textContent = t("bar.alt", fmt(r.total, 1), fmtLimit(limit), Math.round(pct * 100));
 
     // --- tabela rozbicia (dostępna alternatywa dla paska) ---
     var tb = $("tbody");
@@ -908,14 +1231,14 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
       [w, k, o, t, tps].forEach(function (v) { row.appendChild(cell(v)); });
       tb.appendChild(row);
     }
-    addRow("System operacyjny", "#94a3b8", "—", "—", fmt(r.os), fmt(r.os), "—");
+    addRow(t("bar.os"), "#94a3b8", "—", "—", fmt(r.os), fmt(r.os), "—");
     r.rows.forEach(function (row) {
       addRow(row.m.name, row.color, fmt(row.weights),
         row.m.role === "encoder" ? "—" : fmt(row.kv),
         fmt(row.over), fmt(row.total),
         row.tps ? "~" + Math.round(row.tps) : "—");
     });
-    if (r.frag > 0) addRow("Fragmentacja " + Math.round(S.frag * 100) + "%", "#cbd5e1", "—", "—", fmt(r.frag), fmt(r.frag), "—");
+    if (r.frag > 0) addRow(t("tbl.frag", Math.round(S.frag * 100)), "#cbd5e1", "—", "—", fmt(r.frag), fmt(r.frag), "—");
 
     var tw = r.rows.reduce(function (a, x) { return a + x.weights; }, 0);
     var tk = r.rows.reduce(function (a, x) { return a + x.kv; }, 0);
@@ -926,9 +1249,8 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     $("f-t").textContent = fmt(r.total);
 
     $("gpu-info").textContent = g.bw
-      ? "Przepustowość " + g.bw + " GB/s. Szacunek tok/s zakłada " + Math.round(BW_EFF * 100) +
-        "% sprawności i pojedynczy strumień — batch podnosi przepustowość łączną, nie prędkość jednej odpowiedzi."
-      : "Brak danych o przepustowości dla karty własnej, więc szacunek prędkości jest niedostępny.";
+      ? t("gpu.info", g.bw, Math.round(BW_EFF * 100))
+      : t("gpu.infoNone");
 
     renderKvWarning(r);
     renderSummaries(r);
@@ -1007,7 +1329,7 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     m.localKvHeads = p.localKvHeads || 8;
     m.window       = p.window       || 4096;
     // nadpisujemy tylko nazwy domyślne, nigdy tych nadanych przez użytkownika
-    if (!m.name.trim() || /^Model \d+$/.test(m.name)) m.name = p.name;
+    if (!m.name.trim() || /^Model \d+$/.test(m.name)) m.name = presetName(p);
   }
 
   $("add").addEventListener("click", function () {
@@ -1022,37 +1344,42 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
   $("reset").addEventListener("click", function () {
     S = defaults();
     syncGlobals(); renderModels(); refresh();
-    flash("przywrócono domyślne");
+    flash(t("flash.restored"));
   });
 
   $("copy").addEventListener("click", function () {
     var r = compute();
-    var out = ["VRTX Checker — " + r.g.name,
-               "Limit: " + fmtLimit(r.g.vram) + " GiB · KV cache domyślnie: " + kvLabel(S.kvBits), ""];
+    var out = ["VRTX Checker — " + gpuName(r.g),
+               t("copy.limit", fmtLimit(r.g.vram), kvLabel(S.kvBits)), ""];
     r.rows.forEach(function (row) {
-      out.push("• " + row.m.name + "  (" + row.m.params + " mld, wagi " + row.m.quant +
-               ", KV " + kvLabel(row.kvBits) + (row.kvInherited ? "" : "*") +
-               ", " + (row.m.context / 1024) + "K ctx)");
-      out.push("    wagi " + fmt(row.weights) + " + KV " + (row.m.role === "encoder" ? "0,00" : fmt(row.kv)) +
-               " + narzut " + fmt(row.over) + " = " + fmt(row.total) + " GiB" +
-               (row.tps ? "   (~" + Math.round(row.tps) + " tok/s)" : ""));
+      out.push(t("copy.model", row.m.name, numStr(row.m.params), row.m.quant,
+                 kvLabel(row.kvBits), row.kvInherited ? "" : "*", row.m.context / 1024));
+      out.push(t("copy.line", fmt(row.weights),
+                 row.m.role === "encoder" ? fmt(0) : fmt(row.kv),
+                 fmt(row.over), fmt(row.total)) +
+               (row.tps ? t("copy.tps", Math.round(row.tps)) : ""));
     });
     if (r.rows.some(function (row) { return !row.kvInherited; })) {
-      out.push("", "* precyzja KV cache nadpisana na tym modelu");
+      out.push("", t("copy.note"));
     }
-    out.push("", "System: " + fmt(r.os) + " GiB · fragmentacja: " + fmt(r.frag) + " GiB",
-             "RAZEM: " + fmt(r.total, 1) + " / " + fmtLimit(r.g.vram) + " GiB");
+    out.push("", t("copy.sys", fmt(r.os), fmt(r.frag)),
+             t("copy.total", fmt(r.total, 1), fmtLimit(r.g.vram)));
     var txt = out.join("\n");
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(function () { flash("skopiowano"); },
-                                             function () { flash("kopiowanie zablokowane"); });
-    } else { flash("kopiowanie niedostępne"); }
+      navigator.clipboard.writeText(txt).then(function () { flash(t("flash.copied")); },
+                                             function () { flash(t("flash.copyBlocked")); });
+    } else { flash(t("flash.copyNone")); }
   });
 
   /* ============ zdarzenia: ustawienia globalne ============ */
 
   var gsel = $("gpu");
-  GPUS.forEach(function (g) { gsel.appendChild(new Option(g.name, g.id)); });
+  function fillGpus() {
+    gsel.textContent = "";
+    GPUS.forEach(function (g) { gsel.appendChild(new Option(gpuName(g), g.id)); });
+    gsel.value = S.gpu;
+  }
+  fillGpus();
 
   gsel.addEventListener("change", function () {
     S.gpu = gsel.value;
@@ -1064,7 +1391,13 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     refresh();
   });
   $("custom-vram").addEventListener("change", function () { this.value = S.customVram; });
-  KV_PREC.forEach(function (p) { $("kv-prec").appendChild(new Option(p.label, String(p.bits))); });
+  function fillKvPrec() {
+    var el = $("kv-prec");
+    el.textContent = "";
+    KV_PREC.forEach(function (p) { el.appendChild(new Option(t("kv." + p.bits), String(p.bits))); });
+    el.value = String(S.kvBits);
+  }
+  fillKvPrec();
   // Zmiana domyślnej precyzji przerysowuje karty — etykieta "Jak globalnie — …"
   // na każdej z nich musi pokazać nową wartość.
   $("kv-prec").addEventListener("change", function () {
@@ -1075,6 +1408,39 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
   $("proc-ov").addEventListener("input", function () { S.proc = clamp(num(this.value, S.proc), 0, 4); refresh(); });
   $("proc-ov").addEventListener("change", function () { this.value = S.proc; });
   $("frag").addEventListener("change", function () { S.frag = parseFloat(this.value); refresh(); });
+
+  // Nazwa modelu jest danymi użytkownika, więc normalnie jej nie ruszamy.
+  // Wyjątkiem są nazwy, których użytkownik nigdy nie tknął — domyślne z defaults()
+  // i te wzięte z presetu. Bez tego po przełączeniu na EN zostawałyby polskie.
+  function retranslateNames(from, to) {
+    var defKeys = ["def.chat", "def.vision", "def.emb"];
+    S.models.forEach(function (m) {
+      for (var i = 0; i < defKeys.length; i++) {
+        if (m.name === I18N[from][defKeys[i]]) { m.name = I18N[to][defKeys[i]]; return; }
+      }
+      var key = "preset." + m.preset;
+      if (I18N[from][key] !== undefined && m.name === I18N[from][key]) m.name = I18N[to][key];
+    });
+  }
+
+  function setLang(lang) {
+    if (!I18N[lang] || lang === LANG) return;
+    retranslateNames(LANG, lang);
+    LANG = lang;
+    S.lang = lang;
+    document.documentElement.lang = t("lang.html");
+    Array.prototype.forEach.call($("lang").querySelectorAll("[data-lang]"), function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-lang") === lang ? "true" : "false");
+    });
+    applyI18nIn(null);
+    fillKvPrec(); fillGpus();
+    syncGlobals(); renderModels(); renderResults(); save();
+  }
+
+  $("lang").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-lang]");
+    if (btn) setLang(btn.getAttribute("data-lang"));
+  });
 
   function syncGlobals() {
     gsel.value = S.gpu;
@@ -1094,11 +1460,17 @@ td.name{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowra
     compute: compute, mk: mk, defaults: defaults, effKvBits: effKvBits,
     QUANT: QUANT, PRESETS: PRESETS, GPUS: GPUS, CONTEXTS: CONTEXTS, BW_EFF: BW_EFF,
     KV_PREC: KV_PREC, KV_BITS: KV_BITS, FP8_ARCH: FP8_ARCH,
+    I18N: I18N, t: t, setLang: setLang, lang: function () { return LANG; },
     state: function () { return S; },
     load: function (st) { S = st; syncGlobals(); renderModels(); renderResults(); }
   };
 
   /* ============ start ============ */
+  document.documentElement.lang = t("lang.html");
+  Array.prototype.forEach.call($("lang").querySelectorAll("[data-lang]"), function (b) {
+    b.setAttribute("aria-pressed", b.getAttribute("data-lang") === LANG ? "true" : "false");
+  });
+  applyI18nIn(null);
   syncGlobals();
   renderModels();
   renderResults();

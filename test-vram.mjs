@@ -125,6 +125,8 @@ function buildDom(html) {
   return {
     byId,
     document: {
+      // <html> — aplikacja ustawia na nim atrybut lang przy zmianie języka
+      documentElement: new El("html"),
       getElementById: (id) => byId.get(id) || null,
       createElement: (t) => new El(t),
       createTextNode: (t) => new Txt(t),
@@ -605,6 +607,84 @@ group("7. Spójność tabel");
      V.KV_BITS.every((b, i) => i === 0 || V.KV_BITS[i - 1] > b));
   ok("0 nie jest prawidłową precyzją (zarezerwowane na dziedziczenie)",
      !V.KV_BITS.includes(0));
+}
+
+/* ---- 8. Warstwa językowa ---- */
+// Najgroźniejszy błąd przy i18n to nie zła translacja, tylko BRAKUJĄCY klucz —
+// wtedy w UI pojawia się goła nazwa klucza albo tekst zostaje w drugim języku.
+// Dlatego sprawdzamy komplet kluczy w obie strony i pokrycie wszystkich
+// atrybutów data-i18n* wypisanych w HTML.
+group("8. Warstwa językowa PL / EN");
+{
+  const pl = Object.keys(V.I18N.pl);
+  const en = Object.keys(V.I18N.en);
+
+  const brakEn = pl.filter((k) => !(k in V.I18N.en));
+  const brakPl = en.filter((k) => !(k in V.I18N.pl));
+  ok("każdy klucz PL ma odpowiednik EN", brakEn.length === 0, brakEn.join(", "));
+  ok("każdy klucz EN ma odpowiednik PL", brakPl.length === 0, brakPl.join(", "));
+
+  const puste = pl.filter((k) => !String(V.I18N.pl[k]).trim() || !String(V.I18N.en[k] ?? "").trim());
+  ok("żadne tłumaczenie nie jest puste", puste.length === 0, puste.join(", "));
+
+  // Klucze wypisane w HTML muszą istnieć w słowniku — inaczej element zostanie pusty.
+  const wHtml = [...HTML.matchAll(/data-i18n(?:-html|-title|-aria)?="([^"]+)"/g)].map((m) => m[1]);
+  ok("HTML odwołuje się do jakichkolwiek kluczy", wHtml.length > 40, `znaleziono ${wHtml.length}`);
+  const sieroty = [...new Set(wHtml)].filter((k) => !(k in V.I18N.pl));
+  ok("każdy klucz z HTML istnieje w słowniku", sieroty.length === 0, sieroty.join(", "));
+
+  // Teksty wstawiane przez innerHTML muszą być oznaczone prefiksem "h." —
+  // to jedyna droga, którą do DOM trafia znacznik, więc musi być rozpoznawalna.
+  const htmlKeys = [...HTML.matchAll(/data-i18n-html="([^"]+)"/g)].map((m) => m[1]);
+  ok("klucze z markupem mają prefiks h.", htmlKeys.every((k) => k.startsWith("h.")),
+     htmlKeys.filter((k) => !k.startsWith("h.")).join(", "));
+  const zwykle = [...HTML.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]);
+  const zeZnacznikiem = zwykle.filter((k) => /[<>]/.test(V.I18N.pl[k] ?? "") || /[<>]/.test(V.I18N.en[k] ?? ""));
+  ok("teksty wstawiane jako textContent nie zawierają znaczników", zeZnacznikiem.length === 0,
+     zeZnacznikiem.join(", "));
+
+  // Placeholdery pozycyjne muszą się zgadzać, inaczej EN zgubi liczbę.
+  const zlePlaceholdery = pl.filter((k) => {
+    if (!(k in V.I18N.en)) return false;
+    const a = (String(V.I18N.pl[k]).match(/\{\d\}/g) || []).sort().join();
+    const b = (String(V.I18N.en[k]).match(/\{\d\}/g) || []).sort().join();
+    return a !== b;
+  });
+  ok("placeholdery {0}, {1}… zgadzają się między językami", zlePlaceholdery.length === 0,
+     zlePlaceholdery.join(", "));
+
+  // Separator dziesiętny: PL przecinek, EN kropka.
+  V.setLang("pl");
+  ok("PL formatuje liczby z przecinkiem", V.t("copy.total", "1,5", "32").includes("1,5"));
+  const stPl = V.defaults();
+  V.load(stPl);
+  const plKv = V.compute().rows[0];
+  ok("PL: podsumowanie wiersza używa przecinka", /\d,\d/.test(String(plKv.weights.toFixed(2)).replace(".", ",")));
+
+  V.setLang("en");
+  ok("przełączenie ustawia bieżący język na EN", V.lang() === "en");
+  ok("EN tłumaczy etykiety interfejsu", V.t("m.add") === "+ Add model", V.t("m.add"));
+  ok("EN tłumaczy nazwy grup presetów", V.t("grp.2025") === "2025 generation", V.t("grp.2025"));
+  ok("EN zmienia separator dziesiętny w etykiecie kwantyzacji",
+     V.t("quant.Q6_K").includes("6.6"), V.t("quant.Q6_K"));
+  ok("PL ma przecinek w tej samej etykiecie",
+     V.I18N.pl["quant.Q6_K"].includes("6,6"), V.I18N.pl["quant.Q6_K"]);
+
+  // Domyślne nazwy modeli mają się przetłumaczyć, bo użytkownik ich nie tknął.
+  const nazwy = V.state().models.map((m) => m.name);
+  ok("domyślne nazwy modeli przechodzą na EN", nazwy.includes("Chat / agent (MoE)"), nazwy.join(" | "));
+
+  // Nazwa nadana ręcznie musi przetrwać przełączenie języka.
+  V.setLang("pl");
+  const stWlasna = V.defaults();
+  stWlasna.models[0].name = "mój własny model";
+  V.load(stWlasna);
+  V.setLang("en");
+  ok("nazwa nadana przez użytkownika nie jest tłumaczona",
+     V.state().models[0].name === "mój własny model", V.state().models[0].name);
+
+  V.setLang("pl");
+  V.load(V.defaults());
 }
 
 /* ────────────────────────── podsumowanie ────────────────────────── */

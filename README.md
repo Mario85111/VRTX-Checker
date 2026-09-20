@@ -125,6 +125,25 @@ Dla 4 bitów ostrzeżenia nie ma: `q4_0` to zawsze kwantyzacja programowa i dzia
 
 ---
 
+## Język interfejsu
+
+Pigułka `PL | EN` w nagłówku przełącza cały interfejs. Wybór zapisuje się razem z resztą stanu, więc wraca przy kolejnej wizycie.
+
+Przełączenie zmienia nie tylko etykiety:
+
+| Element | PL | EN |
+|---|---|---|
+| Separator dziesiętny | `25,7 GiB` | `25.7 GiB` |
+| Etykieta kwantyzacji | `Q6_K — 6,6 bpw` | `Q6_K — 6.6 bpw` |
+| Atrybut `lang` dokumentu | `pl` | `en` |
+| Eksport do schowka | polski | angielski |
+
+**Nazwy modeli traktowane są jako dane użytkownika.** Przetłumaczą się tylko te, których nigdy nie tknąłeś — domyślne z `defaults()` oraz wzięte z presetu. Nazwa wpisana ręcznie przeżywa przełączenie bez zmian.
+
+Teksty trzymane są w słowniku `I18N` z kluczami `pl` i `en`, a pobierane funkcją `t(klucz, …)` z placeholderami pozycyjnymi `{0}`, `{1}`. Statyczne napisy w HTML są oznaczone atrybutami `data-i18n` (przez `textContent`), `data-i18n-html` (przez `innerHTML`, tylko klucze z prefiksem `h.`), `data-i18n-title` i `data-i18n-aria`.
+
+Test sekcji 8 pilnuje, żeby oba słowniki miały identyczny zbiór kluczy, żeby każdy klucz użyty w HTML istniał w słowniku i żeby placeholdery zgadzały się między językami — brakujący klucz jest przy i18n groźniejszy niż zła translacja, bo daje pusty element albo gołą nazwę klucza.
+
 ## Zawartość
 
 **28 presetów modeli** w pięciu grupach, z architekturami odczytanymi z `config.json` na Hugging Face (stan: sierpień 2026):
@@ -149,7 +168,7 @@ Presety opisują architekturę, ale wszystkie pola są edytowalne. Zmiana dowoln
 node test-vram.mjs
 ```
 
-100 testów, bez zależności zewnętrznych. Test **ładuje prawdziwy skrypt z `index.html`** na minimalnej atrapie DOM i liczy jego własnymi funkcjami — nie powtarza wzorów aplikacji, więc nie może przejść na zduplikowanej (i tak samo błędnej) logice.
+117 testów, bez zależności zewnętrznych. Test **ładuje prawdziwy skrypt z `index.html`** na minimalnej atrapie DOM i liczy jego własnymi funkcjami — nie powtarza wzorów aplikacji, więc nie może przejść na zduplikowanej (i tak samo błędnej) logice.
 
 Wartości oczekiwane pochodzą z dwóch niezależnych źródeł: dokładnych potęg dwójki wyliczonych ręcznie z architektur oraz zmierzonych rozmiarów plików na Hugging Face (bajty, nie szacunki).
 
@@ -166,6 +185,7 @@ Wartości oczekiwane pochodzą z dwóch niezależnych źródeł: dokładnych pot
 | 6 | Presety vs `config.json` z Hugging Face |
 | 6b–6c | Liczby parametrów OCR i mowy vs API HF |
 | 7 | Spójność tabel referencyjnych |
+| 8 | Warstwa językowa PL / EN — komplet kluczy, pokrycie HTML, placeholdery |
 
 Atrapa DOM buduje karty modeli **z atrybutów znalezionych w `index.html`**, a nie z ręcznej listy — usunięcie pola z HTML wywala test, zamiast przejść niezauważone.
 
@@ -184,7 +204,7 @@ Skrypt w `index.html` dzieli się na sekcje: dane referencyjne (`QUANT`, `PRESET
 
 Zapisywany do `localStorage` pod kluczem `vram-calc-v2`, z pełną walidacją przy odczycie — plik mógł zostać zapisany przez starszą wersję albo ręcznie zmodyfikowany. Każde pole ma wartość zastępczą, więc uszkodzony zapis nie wywraca aplikacji.
 
-Schemat jest wstecznie zgodny: zapisy bez pola `kvBits` wczytują się jako dziedziczenie globalnej precyzji, a starsza nazwa `layers` jest czytana jako `fullLayers`.
+Schemat jest wstecznie zgodny: zapisy bez pola `kvBits` wczytują się jako dziedziczenie globalnej precyzji, brak pola `lang` oznacza polski, a starsza nazwa `layers` jest czytana jako `fullLayers`.
 
 Brak dostępu do `localStorage` (tryb prywatny, `data:` URL) jest obsłużony — aplikacja działa, tylko nie zapamiętuje stanu.
 
